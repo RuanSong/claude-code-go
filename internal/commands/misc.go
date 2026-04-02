@@ -6,39 +6,129 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/claude-code-go/claude/internal/engine"
+	"github.com/claude-code-go/claude/internal/services/cost"
 )
 
 var costStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("yellow"))
 var labelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("cyan"))
 var valueStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("green"))
+var headerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("cyan")).Bold(true)
 
+// CostCommand 成本追踪命令 - 显示API使用成本统计
 type CostCommand struct {
 	BaseCommand
+	tracker *cost.CostTracker
 }
 
-func NewCostCommand() *CostCommand {
+// NewCostCommand 创建成本命令
+func NewCostCommand(tracker *cost.CostTracker) *CostCommand {
 	return &CostCommand{
 		BaseCommand: *newCommand("cost", "Show session usage and cost information"),
+		tracker:     tracker,
 	}
 }
 
+// Execute 显示成本统计信息
 func (c *CostCommand) Execute(ctx context.Context, args []string, execCtx engine.CommandContext) error {
-	fmt.Println(costStyle.Render("┌─ Usage & Cost ─"))
-	fmt.Println(costStyle.Render("│"))
-	fmt.Println(costStyle.Render("│  This session"))
-	fmt.Println(costStyle.Render("│  Input tokens:    ") + valueStyle.Render("0"))
-	fmt.Println(costStyle.Render("│  Output tokens:   ") + valueStyle.Render("0"))
-	fmt.Println(costStyle.Render("│  Total tokens:    ") + valueStyle.Render("0"))
-	fmt.Println(costStyle.Render("│"))
-	fmt.Println(costStyle.Render("│  Estimated cost:  ") + valueStyle.Render("$0.00"))
-	fmt.Println(costStyle.Render("│"))
-	fmt.Println(costStyle.Render("│  Claude Opus:     $15.00/1M input, $75.00/1M output"))
-	fmt.Println(costStyle.Render("│  Claude Sonnet:   $3.00/1M input, $15.00/1M output"))
-	fmt.Println(costStyle.Render("│  Claude Haiku:     $0.25/1M input, $1.25/1M output"))
-	fmt.Println(costStyle.Render("│"))
-	fmt.Println(costStyle.Render("└─"))
+	// 解析参数
+	showDetails := false
+	reset := false
+
+	for _, arg := range args {
+		switch arg {
+		case "-d", "--details":
+			showDetails = true
+		case "--reset":
+			reset = true
+		}
+	}
+
+	if reset {
+		if c.tracker != nil {
+			c.tracker.Reset()
+		}
+		fmt.Printf("%s 成本统计已重置\n", costStyle.Render("✓"))
+		return nil
+	}
+
+	if c.tracker == nil {
+		// 显示基本统计(无追踪器时)
+		fmt.Println(headerStyle.Render("═══════════════════════════════════════"))
+		fmt.Println(headerStyle.Render("           API 使用成本统计"))
+		fmt.Println(headerStyle.Render("═══════════════════════════════════════"))
+		fmt.Println()
+		fmt.Println(costStyle.Render("┌─ Usage & Cost ─"))
+		fmt.Println(costStyle.Render("│"))
+		fmt.Println(costStyle.Render("│  This session"))
+		fmt.Println(costStyle.Render("│  Input tokens:    ") + valueStyle.Render("0"))
+		fmt.Println(costStyle.Render("│  Output tokens:   ") + valueStyle.Render("0"))
+		fmt.Println(costStyle.Render("│  Total tokens:    ") + valueStyle.Render("0"))
+		fmt.Println(costStyle.Render("│"))
+		fmt.Println(costStyle.Render("│  Estimated cost:  ") + valueStyle.Render("$0.00"))
+		fmt.Println(costStyle.Render("│"))
+		fmt.Println(costStyle.Render("│  Claude Opus:     $15.00/1M input, $75.00/1M output"))
+		fmt.Println(costStyle.Render("│  Claude Sonnet:   $3.00/1M input, $15.00/1M output"))
+		fmt.Println(costStyle.Render("│  Claude Haiku:     $0.25/1M input, $1.25/1M output"))
+		fmt.Println(costStyle.Render("│"))
+		fmt.Println(costStyle.Render("└─"))
+		return nil
+	}
+
+	// 显示完整成本统计
+	fmt.Println(headerStyle.Render("═══════════════════════════════════════"))
+	fmt.Println(headerStyle.Render("           API 使用成本统计"))
+	fmt.Println(headerStyle.Render("═══════════════════════════════════════"))
+	fmt.Println()
+
+	// 基本统计
+	fmt.Printf("  总成本:          %s\n", costStyle.Render(c.tracker.FormatCost()))
+	fmt.Printf("  API调用时长:     %s\n", cost.FormatDuration(c.tracker.GetTotalAPIDuration()))
+	fmt.Printf("  工具执行时长:     %s\n", cost.FormatDuration(c.tracker.GetTotalAPIDuration()))
+	fmt.Printf("  代码变更:        +%d / -%d 行\n", c.tracker.GetTotalLinesAdded(), c.tracker.GetTotalLinesRemoved())
+
+	fmt.Println()
+	fmt.Printf("  令牌使用:\n")
+	fmt.Printf("    输入令牌:       %s\n", formatNumber(c.tracker.GetTotalInputTokens()))
+	fmt.Printf("    输出令牌:       %s\n", formatNumber(c.tracker.GetTotalOutputTokens()))
+	fmt.Printf("    缓存读取:       %s\n", formatNumber(c.tracker.GetTotalCacheReadInputTokens()))
+	fmt.Printf("    缓存创建:       %s\n", formatNumber(c.tracker.GetTotalCacheCreationInputTokens()))
+	fmt.Printf("    网页搜索:       %d 请求\n", c.tracker.GetTotalWebSearchRequests())
+
+	// 未知模型警告
+	if c.tracker.HasUnknownModelCost() {
+		fmt.Println()
+		fmt.Printf("  %s 警告: 检测到未知模型，使用默认定价\n", lipgloss.NewStyle().Foreground(lipgloss.Color("yellow")).Render("!"))
+	}
+
+	// 详细统计
+	if showDetails {
+		modelUsage := c.tracker.GetAllModelUsage()
+		if len(modelUsage) > 0 {
+			fmt.Println()
+			fmt.Println(headerStyle.Render("  模型使用详情:"))
+			fmt.Println()
+			for model, usage := range modelUsage {
+				fmt.Printf("    %s\n", model)
+				fmt.Printf("      成本:          $%.4f\n", usage.CostUSD)
+				fmt.Printf("      输入令牌:       %d\n", usage.Usage.InputTokens)
+				fmt.Printf("      输出令牌:       %d\n", usage.Usage.OutputTokens)
+				fmt.Println()
+			}
+		}
+	}
 
 	return nil
+}
+
+// formatNumber 格式化数字显示
+func formatNumber(n int64) string {
+	if n >= 1_000_000 {
+		return fmt.Sprintf("%.2fM", float64(n)/1_000_000)
+	}
+	if n >= 1_000 {
+		return fmt.Sprintf("%.1fK", float64(n)/1_000)
+	}
+	return fmt.Sprintf("%d", n)
 }
 
 type MemoryCommand struct {

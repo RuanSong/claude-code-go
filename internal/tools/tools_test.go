@@ -32,7 +32,7 @@ func TestBashTool(t *testing.T) {
 		Cwd: t.TempDir(),
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestBashToolTimeout(t *testing.T) {
 		Cwd: t.TempDir(),
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestReadTool(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -97,7 +97,7 @@ func TestReadToolFileNotFound(t *testing.T) {
 		Cwd: t.TempDir(),
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestGlobTool(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -153,7 +153,7 @@ func TestGrepTool(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestWriteTool(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -209,7 +209,7 @@ func TestWriteToolCreatesDirs(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -244,7 +244,7 @@ func TestWebFetchTool(t *testing.T) {
 		Cwd: t.TempDir(),
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -269,7 +269,7 @@ func TestWebSearchTool(t *testing.T) {
 		Cwd: t.TempDir(),
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -295,7 +295,7 @@ func TestTodoWriteTool(t *testing.T) {
 		Todos: []engine.TodoItem{},
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -313,7 +313,7 @@ func TestTodoWriteToolWithItems(t *testing.T) {
 		Todos: []engine.TodoItem{},
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -344,7 +344,7 @@ func TestFileEditTool(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -373,7 +373,7 @@ func TestFileEditToolNotFound(t *testing.T) {
 		Cwd: t.TempDir(),
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -397,7 +397,7 @@ func TestFileEditToolOldStringNotFound(t *testing.T) {
 		Cwd: tmpDir,
 	}
 
-	result, err := tool.Execute(context.Background(), json.RawMessage(input), execCtx)
+	result, err := tool.Execute(context.Background(), json.RawMessage(input), &execCtx)
 	if err != nil {
 		t.Errorf("Execute failed: %v", err)
 	}
@@ -462,7 +462,7 @@ func (e *emptyTool) Name() string                      { return "" }
 func (e *emptyTool) Description() string               { return "" }
 func (e *emptyTool) InputSchema() schema.Schema        { return nil }
 func (e *emptyTool) Permission() engine.PermissionMode { return engine.PermissionNormal }
-func (e *emptyTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (e *emptyTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	return nil, nil
 }
 

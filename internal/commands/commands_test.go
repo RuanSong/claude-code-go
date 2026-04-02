@@ -235,7 +235,7 @@ func TestHelpCommand(t *testing.T) {
 }
 
 func TestMCPCommand(t *testing.T) {
-	cmd := NewMCPCommand()
+	cmd := NewMCPCommand(nil)
 	if cmd.Name() != "mcp" {
 		t.Errorf("Expected name 'mcp', got '%s'", cmd.Name())
 	}

@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"time"
+
 	"github.com/claude-code-go/claude/internal/engine"
+	"github.com/claude-code-go/claude/internal/services/cost"
 )
 
 type BaseCommand = engine.BaseCommand
@@ -12,6 +15,19 @@ func newCommand(name string, description string) *BaseCommand {
 
 func newPromptCommand(name string, description string) *BaseCommand {
 	return engine.NewBaseCommand(engine.CommandTypePrompt, name, description)
+}
+
+// 全局成本追踪器
+var globalCostTracker *cost.CostTracker
+
+// InitGlobalCostTracker 初始化全局成本追踪器
+func InitGlobalCostTracker(sessionID string) {
+	globalCostTracker = cost.NewCostTracker(sessionID)
+}
+
+// GetGlobalCostTracker 获取全局成本追踪器
+func GetGlobalCostTracker() *cost.CostTracker {
+	return globalCostTracker
 }
 
 // Registry manages all available commands
@@ -71,6 +87,9 @@ func (e *RegistryError) Error() string {
 func DefaultRegistry() *Registry {
 	registry := NewRegistry()
 
+	// 初始化全局成本追踪器
+	InitGlobalCostTracker(time.Now().Format("20060102150405"))
+
 	// Register built-in commands
 	registry.Register(NewCommitCommand())
 	registry.Register(NewDiffCommand())
@@ -85,9 +104,9 @@ func DefaultRegistry() *Registry {
 	registry.Register(NewInitCommand())
 	registry.Register(NewLoginCommand())
 	registry.Register(NewLogoutCommand())
-	registry.Register(NewMCPCommand())
+	registry.Register(NewMCPCommand(nil))
 	registry.Register(NewSkillsCommand())
-	registry.Register(NewCostCommand())
+	registry.Register(NewCostCommand(GetGlobalCostTracker()))
 	registry.Register(NewMemoryCommand())
 	registry.Register(NewResumeCommand())
 	registry.Register(NewShareCommand())
@@ -123,6 +142,59 @@ func DefaultRegistry() *Registry {
 	registry.Register(NewMobileCommand())
 	registry.Register(NewIDECommand())
 	registry.Register(NewHealthCommand())
+
+	// 注册额外的命令
+	registry.Register(NewAgentsCommand())
+	registry.Register(NewPluginCommand())
+	registry.Register(NewReloadPluginsCommand())
+	registry.Register(NewOnboardingCommand())
+	registry.Register(NewUpgradeCommand())
+	registry.Register(NewVoiceCommand())
+	registry.Register(NewBtwCommand())
+	registry.Register(NewThinkbackCommand())
+	registry.Register(NewSandboxCommand())
+	registry.Register(NewPrivacyCommand())
+	registry.Register(NewAutoFixCommand())
+	registry.Register(NewHeapdumpCommand())
+	registry.Register(NewChromeCommand())
+	registry.Register(NewSummaryCommand())
+	registry.Register(NewRateLimitCommand())
+
+	// 注册缺失的命令
+	registry.Register(NewAddDirCommand())
+	registry.Register(NewColorCommand())
+	registry.Register(NewFastCommand())
+	registry.Register(NewInsightsCommand())
+	registry.Register(NewInitVerifiersCommand())
+	registry.Register(NewPassesCommand())
+	registry.Register(NewStickersCommand())
+	registry.Register(NewExtraUsageCommand())
+	registry.Register(NewRemoteEnvCommand())
+	registry.Register(NewCommitPushPRCommand())
+	registry.Register(NewOutputStyleCommand())
+	registry.Register(NewTerminalSetupCommand())
+	registry.Register(NewSecurityReviewCommand())
+	registry.Register(NewAdvisorCommand())
+	registry.Register(NewThinkbackPlayCommand())
+	registry.Register(NewRemoteSetupCommand())
+	registry.Register(NewBridgeCommand())
+	registry.Register(NewBridgeKickCommand())
+	registry.Register(NewInstallGitHubAppCommand())
+	registry.Register(NewInstallSlackAppCommand())
+	registry.Register(NewStatuslineCommand())
+	registry.Register(NewBriefCommand())
+	registry.Register(NewInstallCommand())
+	registry.Register(NewUltraplanCommand())
+	registry.Register(NewIssueCommand())
+	registry.Register(NewPRCommentsCommand())
+	registry.Register(NewBugHunterCommand())
+	registry.Register(NewAntTraceCommand())
+	registry.Register(NewBreakCacheCommand())
+	registry.Register(NewGoodClaudeCommand())
+	registry.Register(NewResetLimitsCommand())
+	registry.Register(NewDebugToolCallCommand())
+	registry.Register(NewPerfIssueCommand())
+	registry.Register(NewOAuthRefreshCommand())
 
 	return registry
 }

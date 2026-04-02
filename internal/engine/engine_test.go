@@ -575,7 +575,7 @@ func (m *mockTool) Name() string               { return m.name }
 func (m *mockTool) Description() string        { return m.description }
 func (m *mockTool) Permission() PermissionMode { return m.permission }
 func (m *mockTool) InputSchema() schema.Schema { return nil }
-func (m *mockTool) Execute(ctx context.Context, input json.RawMessage, execCtx ToolExecContext) (*ToolResult, error) {
+func (m *mockTool) Execute(ctx context.Context, input json.RawMessage, execCtx *ToolExecContext) (*ToolResult, error) {
 	return &ToolResult{Content: []ContentBlock{&TextBlock{Text: "mock result"}}}, nil
 }
 

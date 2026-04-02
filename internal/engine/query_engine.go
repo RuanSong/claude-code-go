@@ -285,7 +285,7 @@ func (e *QueryEngine) executeTool(ctx context.Context, toolCall *ToolUseBlock) (
 		Cwd: cwd,
 	}
 
-	return tool.Execute(ctx, toolCall.Input, execCtx)
+	return tool.Execute(ctx, toolCall.Input, &execCtx)
 }
 
 // estimateCost 估算当前会话的成本

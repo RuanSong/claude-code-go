@@ -39,7 +39,7 @@ type AskUserQuestionInput struct {
 	AllowMultiple bool     `json:"allowMultiple,omitempty"`
 }
 
-func (a *AskUserQuestionTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (a *AskUserQuestionTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req AskUserQuestionInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -83,7 +83,7 @@ type EnterPlanModeInput struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-func (e *EnterPlanModeTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (e *EnterPlanModeTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req EnterPlanModeInput
 	json.Unmarshal(input, &req)
 
@@ -110,7 +110,7 @@ func (e *ExitPlanModeTool) Permission() engine.PermissionMode {
 	return engine.PermissionNormal
 }
 
-func (e *ExitPlanModeTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (e *ExitPlanModeTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	return &engine.ToolResult{
 		Content: []engine.ContentBlock{&engine.TextBlock{Text: "Exiting plan mode..."}},
 	}, nil
@@ -145,7 +145,7 @@ type EnterWorktreeInput struct {
 	Path   string `json:"path,omitempty"`
 }
 
-func (e *EnterWorktreeTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (e *EnterWorktreeTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req EnterWorktreeInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -195,7 +195,7 @@ type ExitWorktreeInput struct {
 	Name string `json:"name"`
 }
 
-func (e *ExitWorktreeTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (e *ExitWorktreeTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req ExitWorktreeInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -247,7 +247,7 @@ type SkillOutput struct {
 	Result  string `json:"result,omitempty"`
 }
 
-func (s *SkillTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (s *SkillTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req SkillInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -298,7 +298,7 @@ type NotebookEditInput struct {
 	CellType   string `json:"cell_type,omitempty"`
 }
 
-func (n *NotebookEditTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (n *NotebookEditTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req NotebookEditInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -338,7 +338,7 @@ type PowerShellInput struct {
 	TimeoutMs int    `json:"timeout_ms,omitempty"`
 }
 
-func (p *PowerShellTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (p *PowerShellTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req PowerShellInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -383,7 +383,7 @@ type REPLInput struct {
 	Language string `json:"language"`
 }
 
-func (r *REPLTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (r *REPLTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req REPLInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -425,7 +425,7 @@ type ScheduleCronInput struct {
 	Description string `json:"description,omitempty"`
 }
 
-func (s *ScheduleCronTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (s *ScheduleCronTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req ScheduleCronInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -465,7 +465,7 @@ type McpAuthInput struct {
 	AuthURL string `json:"auth_url"`
 }
 
-func (m *McpAuthTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (m *McpAuthTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req McpAuthInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -503,7 +503,7 @@ type TaskOutputInput struct {
 	TaskID string `json:"taskId"`
 }
 
-func (t *TaskOutputTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TaskOutputTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TaskOutputInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -545,7 +545,7 @@ type LSPInput struct {
 	Position map[string]interface{} `json:"position,omitempty"`
 }
 
-func (l *LSPTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (l *LSPTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req LSPInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)

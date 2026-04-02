@@ -6,10 +6,17 @@ import (
 	"fmt"
 
 	"github.com/claude-code-go/claude/internal/engine"
+	"github.com/claude-code-go/claude/internal/services/mcp"
 	"github.com/claude-code-go/claude/pkg/schema"
 )
 
-type MCPTool struct{}
+type MCPTool struct {
+	protocol *mcp.MCPProtocol
+}
+
+func NewMCPTool(protocol *mcp.MCPProtocol) *MCPTool {
+	return &MCPTool{protocol: protocol}
+}
 
 func (m *MCPTool) Name() string { return "MCP" }
 
@@ -29,7 +36,7 @@ func (m *MCPTool) InputSchema() schema.Schema {
 }
 
 func (m *MCPTool) Permission() engine.PermissionMode {
-	return engine.PermissionNormal
+	return engine.PermissionElevated
 }
 
 type MCPInput struct {
@@ -39,24 +46,56 @@ type MCPInput struct {
 }
 
 type MCPOutput struct {
-	Result  string `json:"result,omitempty"`
-	Error   string `json:"error,omitempty"`
-	Server  string `json:"server"`
-	Tool    string `json:"tool"`
-	Success bool   `json:"success"`
+	Result  string                   `json:"result,omitempty"`
+	Error   string                   `json:"error,omitempty"`
+	Server  string                   `json:"server"`
+	Tool    string                   `json:"tool"`
+	Success bool                     `json:"success"`
+	Content []map[string]interface{} `json:"content,omitempty"`
 }
 
-func (m *MCPTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (m *MCPTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req MCPInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
 	}
 
+	if m.protocol == nil {
+		return &engine.ToolResult{
+			Content: []engine.ContentBlock{&engine.TextBlock{
+				Text: "MCP protocol not initialized",
+			}},
+		}, nil
+	}
+
+	resp, err := m.protocol.CallTool(ctx, req.Server, req.Tool, req.Args)
+	if err != nil {
+		return &engine.ToolResult{
+			Content: []engine.ContentBlock{&engine.TextBlock{
+				Text: fmt.Sprintf("Error calling MCP tool: %v", err),
+			}},
+		}, nil
+	}
+
 	output := MCPOutput{
 		Server:  req.Server,
 		Tool:    req.Tool,
-		Success: true,
-		Result:  fmt.Sprintf("MCP tool %s from %s would be executed here", req.Tool, req.Server),
+		Success: resp.Success,
+	}
+
+	if resp.Success {
+		if resp.Result != nil {
+			if content, ok := resp.Result["content"]; ok {
+				if contentBytes, err := json.Marshal(content); err == nil {
+					json.Unmarshal(contentBytes, &output.Content)
+				}
+			}
+			if text, ok := resp.Result["text"].(string); ok {
+				output.Result = text
+			}
+		}
+	} else if resp.Error != nil {
+		output.Error = resp.Error.Message
 	}
 
 	resultJSON, _ := json.Marshal(output)
@@ -68,7 +107,13 @@ func (m *MCPTool) Execute(ctx context.Context, input json.RawMessage, execCtx en
 	}, nil
 }
 
-type ListMcpResourcesTool struct{}
+type ListMcpResourcesTool struct {
+	protocol *mcp.MCPProtocol
+}
+
+func NewListMcpResourcesTool(protocol *mcp.MCPProtocol) *ListMcpResourcesTool {
+	return &ListMcpResourcesTool{protocol: protocol}
+}
 
 func (l *ListMcpResourcesTool) Name() string { return "ListMcpResources" }
 
@@ -92,20 +137,50 @@ type ListMcpResourcesInput struct {
 	Server string `json:"server,omitempty"`
 }
 
-func (l *ListMcpResourcesTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (l *ListMcpResourcesTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req ListMcpResourcesInput
 	json.Unmarshal(input, &req)
 
+	if l.protocol == nil {
+		return &engine.ToolResult{
+			Content: []engine.ContentBlock{&engine.TextBlock{Text: "MCP protocol not initialized"}},
+		}, nil
+	}
+
+	serverName := req.Server
+	resources, err := l.protocol.ListResources(ctx, serverName)
+	if err != nil {
+		return &engine.ToolResult{
+			Content: []engine.ContentBlock{&engine.TextBlock{
+				Text: fmt.Sprintf("Error listing resources: %v", err),
+			}},
+		}, nil
+	}
+
 	text := "MCP Resources:\n"
-	text += "  (No MCP servers connected)\n"
-	text += "\nUse /mcp to manage MCP servers"
+	for _, resource := range resources.Resources {
+		text += fmt.Sprintf("  - %s (%s)\n", resource.URI, resource.Name)
+		if resource.Description != "" {
+			text += fmt.Sprintf("    %s\n", resource.Description)
+		}
+	}
+
+	if len(resources.Resources) == 0 {
+		text += "  (No resources available)\n"
+	}
 
 	return &engine.ToolResult{
 		Content: []engine.ContentBlock{&engine.TextBlock{Text: text}},
 	}, nil
 }
 
-type ReadMcpResourceTool struct{}
+type ReadMcpResourceTool struct {
+	protocol *mcp.MCPProtocol
+}
+
+func NewReadMcpResourceTool(protocol *mcp.MCPProtocol) *ReadMcpResourceTool {
+	return &ReadMcpResourceTool{protocol: protocol}
+}
 
 func (r *ReadMcpResourceTool) Name() string { return "ReadMcpResource" }
 
@@ -132,23 +207,40 @@ type ReadMcpResourceInput struct {
 	Resource string `json:"resource"`
 }
 
-func (r *ReadMcpResourceTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (r *ReadMcpResourceTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req ReadMcpResourceInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
 	}
 
+	if r.protocol == nil {
+		return &engine.ToolResult{
+			Content: []engine.ContentBlock{&engine.TextBlock{
+				Text: "MCP protocol not initialized",
+			}},
+		}, nil
+	}
+
+	result, err := r.protocol.ReadResource(ctx, req.Server, req.Resource)
+	if err != nil {
+		return &engine.ToolResult{
+			Content: []engine.ContentBlock{&engine.TextBlock{
+				Text: fmt.Sprintf("Error reading resource: %v", err),
+			}},
+		}, nil
+	}
+
+	resultJSON, _ := json.Marshal(result)
+
 	return &engine.ToolResult{
-		Content: []engine.ContentBlock{&engine.TextBlock{
-			Text: fmt.Sprintf("MCP resource %s from server %s", req.Resource, req.Server),
-		}},
+		Content: []engine.ContentBlock{&engine.TextBlock{Text: string(resultJSON)}},
 	}, nil
 }
 
-func GetMCPTools() []engine.Tool {
+func GetMCPTools(protocol *mcp.MCPProtocol) []engine.Tool {
 	return []engine.Tool{
-		&MCPTool{},
-		&ListMcpResourcesTool{},
-		&ReadMcpResourceTool{},
+		NewMCPTool(protocol),
+		NewListMcpResourcesTool(protocol),
+		NewReadMcpResourceTool(protocol),
 	}
 }

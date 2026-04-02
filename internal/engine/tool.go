@@ -87,11 +87,11 @@ func (ctx *ToolExecContext) SetTodos(todos []TodoItem) {
 // 对应 TypeScript: 工具定义
 // 所有工具必须实现的接口
 type Tool interface {
-	Name() string                                                                                     // 工具名称
-	Description() string                                                                              // 工具描述
-	InputSchema() schema.Schema                                                                       // 输入参数模式
-	Permission() PermissionMode                                                                       // 所需权限级别
-	Execute(ctx context.Context, input json.RawMessage, execCtx ToolExecContext) (*ToolResult, error) // 执行工具
+	Name() string                                                                                      // 工具名称
+	Description() string                                                                               // 工具描述
+	InputSchema() schema.Schema                                                                        // 输入参数模式
+	Permission() PermissionMode                                                                        // 所需权限级别
+	Execute(ctx context.Context, input json.RawMessage, execCtx *ToolExecContext) (*ToolResult, error) // 执行工具
 }
 
 // ToolRegistry 工具注册表

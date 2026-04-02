@@ -47,7 +47,7 @@ type WebFetchResult struct {
 	URL        string `json:"url"`
 }
 
-func (w *WebFetchTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (w *WebFetchTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		URL    string `json:"url"`
 		Prompt string `json:"prompt"`
@@ -194,7 +194,7 @@ type WebSearchOutput struct {
 	DurationSeconds float64        `json:"durationSeconds"`
 }
 
-func (w *WebSearchTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (w *WebSearchTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		Query          string   `json:"query"`
 		AllowedDomains []string `json:"allowed_domains"`
@@ -326,7 +326,7 @@ type TodoOutput struct {
 	VerificationNudgeNeeded bool              `json:"verificationNudgeNeeded,omitempty"`
 }
 
-func (t *TodoWriteTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TodoWriteTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		Todos []engine.TodoItem `json:"todos"`
 	}
@@ -410,7 +410,7 @@ func (f *FileEditTool) Permission() engine.PermissionMode {
 	return engine.PermissionElevated
 }
 
-func (f *FileEditTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (f *FileEditTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		FilePath  string `json:"file_path"`
 		OldString string `json:"old_string"`

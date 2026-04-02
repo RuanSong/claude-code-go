@@ -44,7 +44,7 @@ type SendMessageOutput struct {
 	Timestamp int64  `json:"timestamp"`
 }
 
-func (s *SendMessageTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (s *SendMessageTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req SendMessageInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -91,7 +91,7 @@ type SleepInput struct {
 	Reason     string `json:"reason,omitempty"`
 }
 
-func (s *SleepTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (s *SleepTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req SleepInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -139,7 +139,7 @@ type BriefOutput struct {
 	ToolInvocations int    `json:"toolInvocations"`
 }
 
-func (b *BriefTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (b *BriefTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	output := BriefOutput{
 		SessionDuration: "unknown",
 		MessageCount:    0,
@@ -184,7 +184,7 @@ type ConfigInput struct {
 	Value  string `json:"value,omitempty"`
 }
 
-func (c *ConfigTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (c *ConfigTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req ConfigInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)

@@ -80,7 +80,7 @@ type AgentOutput struct {
 	Result    string `json:"result,omitempty"`
 }
 
-func (a *AgentTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (a *AgentTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req AgentInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -157,7 +157,7 @@ type AgentResultInput struct {
 	AgentID string `json:"agentId"`
 }
 
-func (a *AgentResultTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (a *AgentResultTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req AgentResultInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)

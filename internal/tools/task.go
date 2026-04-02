@@ -75,7 +75,7 @@ type TaskCreateOutput struct {
 	} `json:"task"`
 }
 
-func (t *TaskCreateTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TaskCreateTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TaskCreateInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -130,7 +130,7 @@ type TaskListOutput struct {
 	Tasks []Task `json:"tasks"`
 }
 
-func (t *TaskListTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TaskListTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	taskManager.mu.RLock()
 	tasks := make([]Task, 0, len(taskManager.tasks))
 	for _, task := range taskManager.tasks {
@@ -187,7 +187,7 @@ type TaskUpdateInput struct {
 	Description string `json:"description,omitempty"`
 }
 
-func (t *TaskUpdateTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TaskUpdateTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TaskUpdateInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -248,7 +248,7 @@ type TaskGetInput struct {
 	TaskID string `json:"taskId"`
 }
 
-func (t *TaskGetTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TaskGetTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TaskGetInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -299,7 +299,7 @@ type TaskStopInput struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-func (t *TaskStopTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TaskStopTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TaskStopInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)

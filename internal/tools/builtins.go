@@ -37,7 +37,7 @@ func (b *BashTool) Permission() engine.PermissionMode {
 	return engine.PermissionElevated
 }
 
-func (b *BashTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (b *BashTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		Command    string `json:"command"`
 		TimeoutMs  int    `json:"timeout_ms"`
@@ -110,7 +110,7 @@ func (r *ReadTool) Permission() engine.PermissionMode {
 	return engine.PermissionReadonly
 }
 
-func (r *ReadTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (r *ReadTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		FilePath string `json:"file_path"`
 	}
@@ -157,7 +157,7 @@ func (g *GlobTool) Permission() engine.PermissionMode {
 	return engine.PermissionReadonly
 }
 
-func (g *GlobTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (g *GlobTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		Pattern string `json:"pattern"`
 		Root    string `json:"root"`
@@ -211,7 +211,7 @@ func (g *GrepTool) Permission() engine.PermissionMode {
 	return engine.PermissionReadonly
 }
 
-func (g *GrepTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (g *GrepTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		Pattern   string `json:"pattern"`
 		Path      string `json:"path"`
@@ -265,7 +265,7 @@ func (w *WriteTool) Permission() engine.PermissionMode {
 	return engine.PermissionElevated
 }
 
-func (w *WriteTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (w *WriteTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req struct {
 		FilePath string `json:"file_path"`
 		Content  string `json:"content"`

@@ -67,7 +67,7 @@ type TeamCreateOutput struct {
 	} `json:"team"`
 }
 
-func (t *TeamCreateTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TeamCreateTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TeamCreateInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -124,7 +124,7 @@ type TeamDeleteInput struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-func (t *TeamDeleteTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *TeamDeleteTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req TeamDeleteInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -176,7 +176,7 @@ type ToolSearchInput struct {
 	Query string `json:"query"`
 }
 
-func (t *ToolSearchTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (t *ToolSearchTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req ToolSearchInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -217,7 +217,7 @@ type SyntheticOutputInput struct {
 	Content string `json:"content"`
 }
 
-func (s *SyntheticOutputTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (s *SyntheticOutputTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req SyntheticOutputInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)
@@ -257,7 +257,7 @@ type RemoteTriggerInput struct {
 	Method  string `json:"method,omitempty"`
 }
 
-func (r *RemoteTriggerTool) Execute(ctx context.Context, input json.RawMessage, execCtx engine.ToolExecContext) (*engine.ToolResult, error) {
+func (r *RemoteTriggerTool) Execute(ctx context.Context, input json.RawMessage, execCtx *engine.ToolExecContext) (*engine.ToolResult, error) {
 	var req RemoteTriggerInput
 	if err := json.Unmarshal(input, &req); err != nil {
 		return nil, fmt.Errorf("parse input: %w", err)

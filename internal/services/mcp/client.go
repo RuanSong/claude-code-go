@@ -29,17 +29,62 @@ const (
 	TransportClaudeAiProxy TransportType = "claudeai-proxy"
 )
 
+type ConfigScope string
+
+const (
+	ScopeLocal      ConfigScope = "local"
+	ScopeUser       ConfigScope = "user"
+	ScopeProject    ConfigScope = "project"
+	ScopeDynamic    ConfigScope = "dynamic"
+	ScopeEnterprise ConfigScope = "enterprise"
+	ScopeClaudeAI   ConfigScope = "claudeai"
+	ScopeManaged    ConfigScope = "managed"
+)
+
+type ConnectionState string
+
+const (
+	StateConnected ConnectionState = "connected"
+	StateFailed    ConnectionState = "failed"
+	StateNeedsAuth ConnectionState = "needs-auth"
+	StatePending   ConnectionState = "pending"
+	StateDisabled  ConnectionState = "disabled"
+)
+
 type ClientConfig struct {
-	Name       string        `json:"name"`
-	Version    string        `json:"version"`
-	HTTPClient *http.Client  `json:"-"`
-	Timeout    time.Duration `json:"timeout"`
+	Name       string            `json:"name"`
+	Version    string            `json:"version"`
+	HTTPClient interface{}       `json:"-"`
+	Timeout    time.Duration     `json:"timeout"`
+	Transport  TransportType     `json:"transport"`
+	Command    string            `json:"command,omitempty"`
+	Args       []string          `json:"args,omitempty"`
+	Env        map[string]string `json:"env,omitempty"`
+	URL        string            `json:"url,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
+	Scope      ConfigScope       `json:"scope,omitempty"`
+}
+
+type ServerConfig struct {
+	Name      string            `json:"name"`
+	Transport TransportType     `json:"transport"`
+	Command   string            `json:"command,omitempty"`
+	Args      []string          `json:"args,omitempty"`
+	Env       map[string]string `json:"env,omitempty"`
+	URL       string            `json:"url,omitempty"`
+	Headers   map[string]string `json:"headers,omitempty"`
+	Scope     ConfigScope       `json:"scope,omitempty"`
 }
 
 type MCPTool struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	InputSchema map[string]interface{} `json:"input_schema"`
+	Name         string                 `json:"name"`
+	Description  string                 `json:"description,omitempty"`
+	InputSchema  map[string]interface{} `json:"input_schema,omitempty"`
+	OutputSchema map[string]interface{} `json:"output_schema,omitempty"`
+}
+
+type ListToolsResult struct {
+	Tools []MCPTool `json:"tools"`
 }
 
 type ToolCallRequest struct {
@@ -58,35 +103,20 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-type ListToolsResult struct {
-	Tools []MCPTool `json:"tools"`
-}
-
-type ServerConfig struct {
-	Name      string            `json:"name"`
-	Transport TransportType     `json:"transport"`
-	Command   string            `json:"command,omitempty"`
-	Args      []string          `json:"args,omitempty"`
-	Env       []string          `json:"env,omitempty"`
-	URL       string            `json:"url,omitempty"`
-	Headers   map[string]string `json:"headers,omitempty"`
-}
-
-type ConnectionState string
-
-const (
-	StateConnected ConnectionState = "connected"
-	StateFailed    ConnectionState = "failed"
-	StateNeedsAuth ConnectionState = "needs-auth"
-	StatePending   ConnectionState = "pending"
-	StateDisabled  ConnectionState = "disabled"
-)
-
 type ServerStatus struct {
 	Name      string          `json:"name"`
 	State     ConnectionState `json:"state"`
 	Error     string          `json:"error,omitempty"`
 	LastError time.Time       `json:"lastError,omitempty"`
+}
+
+type OAuthToken struct {
+	AccessToken  string    `json:"access_token"`
+	TokenType    string    `json:"token_type"`
+	ExpiresIn    int       `json:"expires_in"`
+	RefreshToken string    `json:"refresh_token,omitempty"`
+	Scope        string    `json:"scope,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Resource struct {
@@ -104,6 +134,7 @@ type NotificationHandler func(method string, params map[string]interface{})
 
 type Client struct {
 	config    *ClientConfig
+	transport Transport
 	tools     map[string]MCPTool
 	resources map[string]Resource
 	mu        sync.RWMutex
@@ -347,8 +378,8 @@ func (p *MCPProtocol) Initialize(ctx context.Context, servers []map[string]inter
 			serverConfig.Args = args
 		}
 
-		if url, ok := server["url"].(string); ok {
-			serverConfig.URL = url
+		if urlStr, ok := server["url"].(string); ok {
+			serverConfig.URL = urlStr
 		}
 
 		p.manager.configs[name] = serverConfig
@@ -431,15 +462,6 @@ type AuthHandler struct {
 	authCache map[string]time.Time
 }
 
-type OAuthToken struct {
-	AccessToken  string    `json:"access_token"`
-	TokenType    string    `json:"token_type"`
-	ExpiresIn    int       `json:"expires_in"`
-	RefreshToken string    `json:"refresh_token,omitempty"`
-	Scope        string    `json:"scope,omitempty"`
-	CreatedAt    time.Time `json:"created_at"`
-}
-
 func NewAuthHandler() *AuthHandler {
 	return &AuthHandler{
 		tokens:    make(map[string]*OAuthToken),
@@ -501,43 +523,22 @@ type ToolResponse struct {
 	IsError bool                     `json:"is_error,omitempty"`
 }
 
-type McpAuthError struct {
-	Code    int
-	Message string
+type ContentBlock struct {
+	Type string `json:"type"`
+	Text string `json:"text,omitempty"`
+	Data string `json:"data,omitempty"`
+	URI  string `json:"uri,omitempty"`
 }
 
-func (e *McpAuthError) Error() string {
-	return e.Message
+type MCPToolResult struct {
+	Content []ContentBlock `json:"content"`
+	IsError bool           `json:"is_error,omitempty"`
+	Meta    *ResultMeta    `json:"_meta,omitempty"`
 }
 
-type McpToolCallError struct {
-	Code    int
-	Message string
-}
-
-func (e *McpToolCallError) Error() string {
-	return e.Message
-}
-
-func IsSessionExpiredError(err error) bool {
-	if err == nil {
-		return false
-	}
-	return false
-}
-
-func NewMcpAuthError(message string) *McpAuthError {
-	return &McpAuthError{
-		Code:    401,
-		Message: message,
-	}
-}
-
-func NewMcpToolCallError(message string) *McpToolCallError {
-	return &McpToolCallError{
-		Code:    -32000,
-		Message: message,
-	}
+type ResultMeta struct {
+	Elapsed  int64  `json:"Elapsed,omitempty"`
+	Provider string `json:"provider,omitempty"`
 }
 
 type ProgressCallback func(progress float64, message string)
