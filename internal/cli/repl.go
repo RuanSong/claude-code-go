@@ -11,6 +11,7 @@ import (
 	"github.com/claude-code-go/claude/internal/engine"
 	"github.com/claude-code-go/claude/internal/tools"
 	"github.com/claude-code-go/claude/pkg/anthropic"
+	"github.com/claude-code-go/claude/pkg/llm"
 )
 
 var (
@@ -41,11 +42,12 @@ func NewREPL(apiKey, model string) *REPL {
 func (r *REPL) Run() error {
 	r.printWelcome()
 
-	// Initialize engine
-	apiClient := anthropic.NewClient(anthropic.Config{
-		APIKey: r.apiKey,
-		Model:  r.model,
-	})
+	// Initialize LLM provider using the adapter for backward compatibility
+	apiClient := llm.NewAnthropicProvider(
+		r.apiKey,
+		anthropic.DefaultBaseURL,
+		r.model,
+	)
 
 	toolRegistry := engine.NewToolRegistry()
 	for _, tool := range GetBuiltInTools() {

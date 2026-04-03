@@ -11,6 +11,7 @@ import (
 	"github.com/claude-code-go/claude/internal/engine"
 	"github.com/claude-code-go/claude/internal/tui"
 	"github.com/claude-code-go/claude/pkg/anthropic"
+	"github.com/claude-code-go/claude/pkg/llm"
 )
 
 // TUI REPL配置
@@ -38,11 +39,12 @@ func NewTUIREPL(config TUIREPLConfig) *TUIREPL {
 
 // Run 启动TUI REPL
 func (r *TUIREPL) Run() error {
-	// 初始化API客户端
-	apiClient := anthropic.NewClient(anthropic.Config{
-		APIKey: r.config.APIKey,
-		Model:  r.config.Model,
-	})
+	// 初始化LLM provider
+	apiClient := llm.NewAnthropicProvider(
+		r.config.APIKey,
+		anthropic.DefaultBaseURL,
+		r.config.Model,
+	)
 
 	// 初始化工具注册表
 	toolRegistry := engine.NewToolRegistry()
@@ -162,11 +164,12 @@ func NewSimpleREPL(config TUIREPLConfig) *SimpleREPL {
 func (r *SimpleREPL) Run() error {
 	r.printWelcome()
 
-	// 初始化
-	apiClient := anthropic.NewClient(anthropic.Config{
-		APIKey: r.config.APIKey,
-		Model:  r.config.Model,
-	})
+	// 初始化LLM provider
+	apiClient := llm.NewAnthropicProvider(
+		r.config.APIKey,
+		anthropic.DefaultBaseURL,
+		r.config.Model,
+	)
 
 	toolRegistry := engine.NewToolRegistry()
 	for _, tool := range GetBuiltInTools() {

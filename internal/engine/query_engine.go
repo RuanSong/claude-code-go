@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/claude-code-go/claude/pkg/anthropic"
+	"github.com/claude-code-go/claude/pkg/llm"
 )
 
 // QueryEngine 查询引擎
@@ -17,7 +17,7 @@ type QueryEngine struct {
 	config     Config             // 引擎配置
 	context    *ContextManager    // 对话上下文管理器
 	tools      *ToolRegistry      // 工具注册表
-	llmClient  *anthropic.Client  // Anthropic API客户端
+	llmClient  llm.LLMProvider    // LLM Provider (支持多 Provider)
 	permission *PermissionManager // 权限管理器
 	turnCount  int                // 当前对话轮次计数
 	mu         sync.Mutex         // 互斥锁，保护共享状态
@@ -26,7 +26,7 @@ type QueryEngine struct {
 // NewQueryEngine 创建新的查询引擎
 // 对应 TypeScript: QueryEngine 构造函数
 // 初始化上下文管理器、权限管理器等组件
-func NewQueryEngine(config Config, client *anthropic.Client) *QueryEngine {
+func NewQueryEngine(config Config, client llm.LLMProvider) *QueryEngine {
 	return &QueryEngine{
 		config:     config,
 		context:    NewContextManager(config.SystemPrompt, config.MaxTokens),
@@ -107,12 +107,17 @@ func (e *QueryEngine) handleSlashCommand(ctx context.Context, input string) erro
 func (e *QueryEngine) queryLoop(ctx context.Context) error {
 	for {
 		// 构建API请求
-		req := e.buildRequest()
+		req := e.buildLLMRequest()
 
 		// 发送请求到LLM
 		resp, err := e.llmClient.CreateMessage(ctx, req)
 		if err != nil {
 			return fmt.Errorf("LLM query failed: %w", err)
+		}
+
+		// 检查响应错误
+		if resp.Error != nil {
+			return fmt.Errorf("LLM error: %s - %s", resp.Error.Type, resp.Error.Message)
 		}
 
 		// 更新令牌使用量
@@ -123,7 +128,7 @@ func (e *QueryEngine) queryLoop(ctx context.Context) error {
 		})
 
 		// 解析响应并添加到上下文
-		assistantMsg := e.parseResponse(resp)
+		assistantMsg := e.parseLLMResponse(resp)
 		e.context.AddMessage(assistantMsg)
 
 		// 检查是否有工具调用
@@ -162,60 +167,82 @@ func (e *QueryEngine) queryLoop(ctx context.Context) error {
 	}
 }
 
-// buildRequest 从当前上下文构建API请求
-// 对应 TypeScript: 构建API请求
-// 将内部消息格式转换为Anthropic API格式
-func (e *QueryEngine) buildRequest() *anthropic.CreateMessageRequest {
+// buildLLMRequest 从当前上下文构建LLM请求
+// 将内部消息格式转换为LLM Provider格式
+func (e *QueryEngine) buildLLMRequest() *llm.MessageRequest {
 	messages := e.context.GetMessages()
 
-	// 转换为API消息格式
-	apiMessages := make([]anthropic.Message, 0, len(messages))
+	// 转换为LLM消息格式
+	llmMessages := make([]llm.Message, 0, len(messages))
 	for _, msg := range messages {
-		blocks := make([]anthropic.ContentBlock, 0, len(msg.Content))
-		for _, block := range msg.Content {
-			switch b := block.(type) {
-			case *TextBlock:
-				blocks = append(blocks, anthropic.NewTextContent(b.Text))
-			case *ToolUseBlock:
-				blocks = append(blocks, anthropic.NewToolUseContent(b.ID, b.Name, b.Input))
-			case *ToolResultBlock:
-				content := ""
-				if c, ok := b.Content.(string); ok {
-					content = c
-				}
-				blocks = append(blocks, anthropic.NewToolResultContent(b.ToolUseID, content, b.IsError))
-			}
-		}
-		apiMessages = append(apiMessages, anthropic.Message{
+		content := e.convertContentToLLM(msg.Content)
+		llmMessages = append(llmMessages, llm.Message{
 			Role:    msg.Role,
-			Content: blocks,
+			Content: content,
 		})
 	}
 
-	// 转换工具为API格式
-	tools := make([]anthropic.ToolDef, 0)
-	for _, tool := range e.tools.List() {
-		inputSchema, _ := json.Marshal(tool.InputSchema())
-		tools = append(tools, anthropic.ToolDef{
-			Name:        tool.Name(),
-			Description: tool.Description(),
-			InputSchema: inputSchema,
-		})
-	}
+	// 转换工具为LLM格式
+	tools := e.convertToolsToLLM()
 
-	return &anthropic.CreateMessageRequest{
-		Model:     e.config.Model,
-		Messages:  apiMessages,
-		MaxTokens: 4096,
-		System:    e.context.GetSystemPrompt(),
-		Tools:     tools,
+	return &llm.MessageRequest{
+		Model:        e.config.Model,
+		Messages:     llmMessages,
+		SystemPrompt: e.context.GetSystemPrompt(),
+		MaxTokens:    4096,
+		Tools:        tools,
 	}
 }
 
-// parseResponse 解析API响应
-// 对应 TypeScript: 响应解析
-// 将API返回的content blocks转换为内部消息格式
-func (e *QueryEngine) parseResponse(resp *anthropic.CreateMessageResponse) *Message {
+// convertContentToLLM 将内部内容块转换为LLM格式
+func (e *QueryEngine) convertContentToLLM(blocks []ContentBlock) any {
+	if len(blocks) == 0 {
+		return ""
+	}
+
+	// 如果只有一个文本块，返回字符串
+	if len(blocks) == 1 {
+		if tb, ok := blocks[0].(*TextBlock); ok {
+			return tb.Text
+		}
+	}
+
+	// 多个块，返回内容块数组
+	result := make([]llm.ContentBlock, 0, len(blocks))
+	for _, block := range blocks {
+		switch b := block.(type) {
+		case *TextBlock:
+			result = append(result, llm.NewTextContent(b.Text))
+		case *ToolUseBlock:
+			result = append(result, llm.NewToolUseContent(b.ID, b.Name, b.Input))
+		case *ToolResultBlock:
+			content := ""
+			if c, ok := b.Content.(string); ok {
+				content = c
+			}
+			result = append(result, llm.NewToolResultContent(b.ToolUseID, content, b.IsError))
+		}
+	}
+	return result
+}
+
+// convertToolsToLLM 将内部工具转换为LLM格式
+func (e *QueryEngine) convertToolsToLLM() []llm.ToolDef {
+	tools := make([]llm.ToolDef, 0)
+	for _, tool := range e.tools.List() {
+		inputSchema, _ := json.Marshal(tool.InputSchema())
+		tools = append(tools, llm.ToolDef{
+			Name:        tool.Name(),
+			Description: tool.Description(),
+			Parameters:  inputSchema,
+		})
+	}
+	return tools
+}
+
+// parseLLMResponse 解析LLM响应
+// 将LLM返回的content blocks转换为内部消息格式
+func (e *QueryEngine) parseLLMResponse(resp *llm.MessageResponse) *Message {
 	content := make([]ContentBlock, 0, len(resp.Content))
 	for _, block := range resp.Content {
 		switch b := block.(type) {

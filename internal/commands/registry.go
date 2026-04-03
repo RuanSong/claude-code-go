@@ -159,6 +159,7 @@ func DefaultRegistry() *Registry {
 	registry.Register(NewChromeCommand())
 	registry.Register(NewSummaryCommand())
 	registry.Register(NewRateLimitCommand())
+	registry.Register(NewConnectCommand())
 
 	// 注册缺失的命令
 	registry.Register(NewAddDirCommand())
